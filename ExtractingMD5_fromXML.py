@@ -10,8 +10,8 @@ Usage:
 import sys
 import os
 import getopt
-from xml.dom import minidom
 from time import gmtime, strftime
+from bs4 import BeautifulSoup
 
 def main():
 	# parse command line options
@@ -32,20 +32,25 @@ def main():
 		else:
 			print __doc__
 			sys.exit(0)
+
+	# print csv head
+	#print "# Extracting from %s at %s" % (fn, strftime("%Y-%m-%d %H:%M:%S", gmtime()))
+	#print "# MD5, filename"
 	
 	# XML parsing 
-	xmldoc = minidom.parse(fn)
-	files = xmldoc.getElementsByTagName('fileobject')
-	
-	# print csv head
-	print "# Extracting from %s at %s" % (fn, strftime("%Y-%m-%d %H:%M:%S", gmtime()))
-	print "# filename, MD5"
-	
-	# print extracted data
-	for fileobject in files:
-		fn = fileobject.getElementsByTagName("filename")[0]
-		md5 = fileobject.getElementsByTagName("hashdigest")[0]
-		print fn.firstChild.data +", "+ md5.firstChild.data
+	fp = open(fn, "r")
+	soup = BeautifulSoup(fp, "xml")
+	error_cnt = 0
+	for node in soup.findAll('fileobject'):
+		try:
+			print "%s, %s" %(node.hashdigest.string,node.filename.string)
+		except UnicodeEncodeError as e:
+			#print(str(e))
+			#print type(node.filename.string)
+			#print type(node.hashdigest.string)
+			error_cnt += 1
+			pass
+	#print "The End (ERR_CNT: %d)" % error_cnt
 
 if __name__ == "__main__":
 	main()
